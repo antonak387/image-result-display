@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->tableWidget->hide();
+    ui->splitter->hide();
     ui->pushButton_back->hide();
     ui->pushButton_next->hide();
 }
@@ -40,27 +40,16 @@ void MainWindow::on_pushButton_open_clicked()
 
             if(jsonDocError.error == 0)//QJsonParseError::NoError
             {
-                //qDebug()<<"JSON Файл не содержит ошибок";
                 if (jsonDoc.isArray())
                 {
                     jsonArray = jsonDoc.array();
-                    widget_update();
-
-
-
                     ui->pushButton_open->hide();
-                    ui->tableWidget->show();
-
-
-
-
-                    //qDebug()<<"все ок";
-                    //здесь будет функция которая разбирается с массивом
+                    ui->splitter->show();
+                    widget_update();
                 }
                 else
                 {
                     QMessageBox::information(this, "Ошибка", "JSON Файл не является массивом, пожалуйста измените файл", QMessageBox::Ok);
-                    //qDebug()<<"JSON Файл не является массивом";
                 }
             }
             else
@@ -96,7 +85,7 @@ void MainWindow::widget_update()
         ui->pushButton_back->show();
     }
 
-    ui->label->clear();
+    ui->label_backgroundImage->clear();
 
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
@@ -132,10 +121,7 @@ void MainWindow::widget_update()
         ++row;
     }
 
-
-    QImage image("C:/Users/tohag/Desktop/" + jsonObjectFull["image"].toString()); // Замените на путь к вашему изображению
-
-    qDebug()<<jsonObjectFull["image"].toString();
+    QImage image("C:/Users/tohag/Desktop/" + jsonObjectFull["image"].toString());
 
     if (image.isNull())
     {
@@ -143,23 +129,93 @@ void MainWindow::widget_update()
     }
     else
     {
-        QPixmap pixmap = QPixmap::fromImage(image.scaled(ui->label->size(), Qt::KeepAspectRatio));
-        ui->label->setPixmap(pixmap);
+        pixmap = QPixmap::fromImage(image);
+        QPixmap tempPixmap =  pixmap.scaledToHeight(ui->scrollArea->height()-3);
+        ui->label_backgroundImage->setPixmap(tempPixmap);
+
+        MainWindow::painterQuad();
+
+        QList<int> sizes;
+        sizes << tempPixmap.width()+3 << ui->splitter->width() - tempPixmap.width()-3;
+        ui->splitter->setSizes(sizes);
     }
 }
 
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    Q_UNUSED(event);
+
+    if(!pixmap.isNull()&&ui->scrollArea->height()<pixmap.scaledToWidth(ui->scrollArea->width()-20).height())
+    {
+        ui->label_backgroundImage->setPixmap( pixmap.scaledToWidth(ui->scrollArea->width()-22));
+    }
+}
 
 void MainWindow::on_pushButton_back_clicked()
 {
     itemIndex--;
     widget_update();
-
 }
-
 
 void MainWindow::on_pushButton_next_clicked()
 {
     itemIndex++;
     widget_update();
+}
+
+void MainWindow::on_splitter_splitterMoved(int pos, int index)
+{
+    Q_UNUSED(pos);
+    Q_UNUSED(index);
+    if(!pixmap.isNull()&&ui->scrollArea->height()<pixmap.scaledToWidth(ui->scrollArea->width()-20).height())
+    {
+        ui->label_backgroundImage->setPixmap( pixmap.scaledToWidth(ui->scrollArea->width()-22));
+    }
+}
+
+void MainWindow::painterQuad()
+{
+
+    //QJsonObject jsonObjectFull = jsonArray.at(itemIndex).toObject();
+    //QJsonObject jsonObject = jsonObjectFull["objects"].toObject();
+    QImage image;
+    QPainter painter(&image);
+    QJsonObject jsonObject = jsonArray.at(itemIndex).toObject()["objects"].toObject();
+
+    for (const QString &objectName : jsonObject.keys())
+    {
+        QJsonArray quadArray = jsonObject[objectName].toObject().value("quad").toArray();
+        QPoint arr[4];
+
+        for (const QJsonValue &quadValue : quadArray)
+        {
+            QJsonArray pointArray = quadValue.toArray();
+            if (pointArray.size() == 2)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    arr[i].setX(pointArray.at(0).toDouble());
+                    arr[i].setY(pointArray.at(1).toDouble());
+                    }
+            }
+
+        }
+        qDebug()<<arr[0];
+
+
+
+        QPen pen;
+        pen.setColor(Qt::white);
+        pen.setWidth(10);//толщина
+        painter.setPen(pen);
+
+
+
+        painter.drawPolygon(arr, 4);
+    }
+
+    painter.drawImage(0,0,image);
+    ui->label_backgroundImage->setPixmap(QPixmap::fromImage(image));
+
 }
 
