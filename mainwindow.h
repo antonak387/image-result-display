@@ -36,13 +36,8 @@ private slots:
 
     void on_pushButton_next_clicked();
 
-    void on_splitter_splitterMoved(int pos, int index);
-
     void widget_update();
 
-    void resizeEvent(QResizeEvent *event) override;
-
-    void painterQuad();
 
 private:
     Ui::MainWindow *ui;

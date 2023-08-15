@@ -7,9 +7,10 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->splitter->hide();
+    //ui->splitter->hide();
     ui->pushButton_back->hide();
     ui->pushButton_next->hide();
+    MainWindow::showMaximized();
 }
 
 MainWindow::~MainWindow()
@@ -85,8 +86,6 @@ void MainWindow::widget_update()
         ui->pushButton_back->show();
     }
 
-    ui->label_backgroundImage->clear();
-
     ui->tableWidget->clear();
     ui->tableWidget->setRowCount(0);
 
@@ -102,6 +101,29 @@ void MainWindow::widget_update()
     ui->tableWidget->setColumnCount(4); // Настройте количество столбцов
     ui->tableWidget->setHorizontalHeaderLabels({"Object Name", "Value", "Confidence", "Quad"}); // Настройте заголовки столбцов
 
+    QImage image("C:/Users/tohag/Desktop/" + jsonObjectFull["image"].toString());
+
+    bool imageOpen;
+
+
+
+    if (image.isNull())
+    {
+        QMessageBox::information(this, "Ошибка", "Изображение не открывается", QMessageBox::Ok);
+        imageOpen = false;
+    }
+    else
+    {
+        imageOpen = true;
+
+        ui->widget_image->setMinimumHeight(image.height());
+
+        ui->widget_image->create_image(image);
+
+        QList<int> sizes;
+        sizes << image.width() << ui->splitter->width() - image.width();
+        ui->splitter->setSizes(sizes);
+    }
 
     int row = 0;
     for (const QString &objectName : jsonObject.keys())
@@ -118,36 +140,33 @@ void MainWindow::widget_update()
         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(QString::number(confidence)));
         ui->tableWidget->setItem(row, 3, new QTableWidgetItem(quad));
 
+        if(imageOpen)
+        {
+
+            QPainter painter(&ui->widget_image->im);
+            //painter.drawLine(0,200,200,200);
+            QJsonArray quadArray = object.value("quad").toArray();
+            QPolygon polygon;
+
+            for (const QJsonValue &quadValue : quadArray)
+            {
+                QJsonArray pointArray = quadValue.toArray();
+                if (pointArray.size() == 2)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        QPoint point;
+                        point.setX(pointArray.at(0).toDouble());
+                        point.setY(pointArray.at(1).toDouble());
+                        polygon<<point;
+                    }
+                }
+
+            }
+            painter.drawPolygon(polygon);
+        }
         ++row;
-    }
-
-    QImage image("C:/Users/tohag/Desktop/" + jsonObjectFull["image"].toString());
-
-    if (image.isNull())
-    {
-        QMessageBox::information(this, "Ошибка", "Изображение не открывается", QMessageBox::Ok);
-    }
-    else
-    {
-        pixmap = QPixmap::fromImage(image);
-        QPixmap tempPixmap =  pixmap.scaledToHeight(ui->scrollArea->height()-3);
-        ui->label_backgroundImage->setPixmap(tempPixmap);
-
-        MainWindow::painterQuad();
-
-        QList<int> sizes;
-        sizes << tempPixmap.width()+3 << ui->splitter->width() - tempPixmap.width()-3;
-        ui->splitter->setSizes(sizes);
-    }
-}
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-    Q_UNUSED(event);
-
-    if(!pixmap.isNull()&&ui->scrollArea->height()<pixmap.scaledToWidth(ui->scrollArea->width()-20).height())
-    {
-        ui->label_backgroundImage->setPixmap( pixmap.scaledToWidth(ui->scrollArea->width()-22));
+        ui->widget_image->update();
     }
 }
 
@@ -163,59 +182,4 @@ void MainWindow::on_pushButton_next_clicked()
     widget_update();
 }
 
-void MainWindow::on_splitter_splitterMoved(int pos, int index)
-{
-    Q_UNUSED(pos);
-    Q_UNUSED(index);
-    if(!pixmap.isNull()&&ui->scrollArea->height()<pixmap.scaledToWidth(ui->scrollArea->width()-20).height())
-    {
-        ui->label_backgroundImage->setPixmap( pixmap.scaledToWidth(ui->scrollArea->width()-22));
-    }
-}
-
-void MainWindow::painterQuad()
-{
-
-    //QJsonObject jsonObjectFull = jsonArray.at(itemIndex).toObject();
-    //QJsonObject jsonObject = jsonObjectFull["objects"].toObject();
-    QImage image;
-    QPainter painter(&image);
-    QJsonObject jsonObject = jsonArray.at(itemIndex).toObject()["objects"].toObject();
-
-    for (const QString &objectName : jsonObject.keys())
-    {
-        QJsonArray quadArray = jsonObject[objectName].toObject().value("quad").toArray();
-        QPoint arr[4];
-
-        for (const QJsonValue &quadValue : quadArray)
-        {
-            QJsonArray pointArray = quadValue.toArray();
-            if (pointArray.size() == 2)
-            {
-                for (int i = 0; i < 4; i++)
-                {
-                    arr[i].setX(pointArray.at(0).toDouble());
-                    arr[i].setY(pointArray.at(1).toDouble());
-                    }
-            }
-
-        }
-        qDebug()<<arr[0];
-
-
-
-        QPen pen;
-        pen.setColor(Qt::white);
-        pen.setWidth(10);//толщина
-        painter.setPen(pen);
-
-
-
-        painter.drawPolygon(arr, 4);
-    }
-
-    painter.drawImage(0,0,image);
-    ui->label_backgroundImage->setPixmap(QPixmap::fromImage(image));
-
-}
 
