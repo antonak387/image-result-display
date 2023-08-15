@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_back->hide();
     ui->pushButton_next->hide();
     MainWindow::showMaximized();
+    MainWindow::setWindowTitle("Приложение для отображения результатов распознавания");
 }
 
 MainWindow::~MainWindow()
@@ -26,43 +27,59 @@ void MainWindow::on_pushButton_open_clicked()
     QFile file;
     QJsonParseError jsonDocError;
 
-    fileName = QFileDialog::getOpenFileName(this, "Открыть файл", "C:\\Users\\tohag\\Desktop\\", "JSON files (*.json)");
+
+    QMessageBox::information(this, "Внимание", "Выберите JSON файл",QMessageBox::Ok);
+
+    fileName = QFileDialog::getOpenFileName(this, "Открыть файл JSON", "../", "JSON files (*.json)");
+
     if (fileName.isEmpty())
     {
         //qDebug()<<"Файл не выбран";
-        QMessageBox::information(this, "Ошибка", "Файл не выбран",QMessageBox::Ok);
+        QMessageBox::information(this, "Ошибка", "JSON файл не выбран",QMessageBox::Ok);
     }
     else
     {
-        file.setFileName(fileName);
-        if(file.open(QIODevice::ReadOnly|QFile::Text))
-        {
-            jsonDoc = QJsonDocument::fromJson(QByteArray(file.readAll()),&jsonDocError);
+        QMessageBox::information(this, "Внимание", "Выберите папку c изображениями",QMessageBox::Ok);
+        pathToImages = QFileDialog::getExistingDirectory(this, "Открыть папку c изображениями", "", QFileDialog::ShowDirsOnly);
+        QDir dir(pathToImages);
+        pathToImages = dir.filePath("..");
 
-            if(jsonDocError.error == 0)//QJsonParseError::NoError
+        if(pathToImages.isEmpty())
+        {
+            QMessageBox::information(this, "Ошибка", "Файл с изображениями не выбран",QMessageBox::Ok);
+        }
+        else
             {
-                if (jsonDoc.isArray())
+            file.setFileName(fileName);
+            if(file.open(QIODevice::ReadOnly|QFile::Text))
+            {
+                jsonDoc = QJsonDocument::fromJson(QByteArray(file.readAll()),&jsonDocError);
+
+                if(jsonDocError.error == 0)//QJsonParseError::NoError
                 {
-                    jsonArray = jsonDoc.array();
-                    ui->pushButton_open->hide();
-                    ui->splitter->show();
-                    widget_update();
+                    if (jsonDoc.isArray())
+                    {
+                        jsonArray = jsonDoc.array();
+                        ui->pushButton_open->hide();
+                        ui->splitter->show();
+                        widget_update();
+                    }
+                    else
+                    {
+                        QMessageBox::information(this, "Ошибка", "JSON Файл не является массивом, пожалуйста измените файл", QMessageBox::Ok);
+                    }
                 }
                 else
                 {
-                    QMessageBox::information(this, "Ошибка", "JSON Файл не является массивом, пожалуйста измените файл", QMessageBox::Ok);
+                    QMessageBox::information(this, "Ошибка", "JSON Файл содержит ошибку", QMessageBox::Ok);
                 }
             }
             else
             {
-                QMessageBox::information(this, "Ошибка", "JSON Файл содержит ошибку", QMessageBox::Ok);
+                QMessageBox::information(this, "Ошибка", "Не получилось открыть JSON файл",QMessageBox::Ok);
             }
+            file.close();
         }
-        else
-        {
-            QMessageBox::information(this, "Ошибка", "Не получилось открыть файл",QMessageBox::Ok);
-        }
-        file.close();
     }
 }
 
@@ -101,11 +118,9 @@ void MainWindow::widget_update()
     ui->tableWidget->setColumnCount(4); // Настройте количество столбцов
     ui->tableWidget->setHorizontalHeaderLabels({"Object Name", "Value", "Confidence", "Quad"}); // Настройте заголовки столбцов
 
-    QImage image("C:/Users/tohag/Desktop/" + jsonObjectFull["image"].toString());
+    QImage image(pathToImages+ "/" + jsonObjectFull["image"].toString());
 
     bool imageOpen;
-
-
 
     if (image.isNull())
     {

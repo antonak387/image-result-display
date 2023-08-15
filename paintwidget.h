@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 
+
 class paintWidget : public QWidget
 {
     Q_OBJECT

@@ -50,7 +50,7 @@
       <item>
        <widget class="QPushButton" name="pushButton_open">
         <property name="text">
-         <string>Открыть файл JSON</string>
+         <string>Открыть файл JSON и папку с изображениями</string>
         </property>
        </widget>
       </item>

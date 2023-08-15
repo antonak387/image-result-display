@@ -6,16 +6,15 @@
 #include <QMessageBox>
 
 #include <QFile>
+#include <QDir>
 
 #include<QJsonObject>
 #include<QJsonParseError>
 #include<QJsonArray>
 
-#include <QPixmap>
 #include <QImage>
 #include <QPainter>
 
-#include<QStandardItem>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -38,12 +37,12 @@ private slots:
 
     void widget_update();
 
-
 private:
     Ui::MainWindow *ui;
     QJsonDocument jsonDoc;
     QJsonArray jsonArray;
     QPixmap pixmap;
     int itemIndex;
+    QString pathToImages;
 };
 #endif // MAINWINDOW_H
