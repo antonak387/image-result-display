@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    //ui->splitter->hide();
+    ui->splitter->hide();
     ui->pushButton_back->hide();
     ui->pushButton_next->hide();
     MainWindow::showMaximized();
