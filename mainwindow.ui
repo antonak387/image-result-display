@@ -15,29 +15,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <widget class="QScrollArea" name="scrollArea">
-       <property name="widgetResizable">
-        <bool>true</bool>
-       </property>
-       <widget class="paintWidget" name="widget_image">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>73</width>
-          <height>344</height>
-         </rect>
-        </property>
-       </widget>
-      </widget>
-      <widget class="QTableWidget" name="tableWidget"/>
-     </widget>
-    </item>
     <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -63,8 +40,58 @@
       </item>
      </layout>
     </item>
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QScrollArea" name="scrollArea">
+       <property name="widgetResizable">
+        <bool>true</bool>
+       </property>
+       <widget class="paintWidget" name="widget_image">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>73</width>
+          <height>331</height>
+         </rect>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QTableWidget" name="tableWidget"/>
+     </widget>
+    </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1280</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Меню</string>
+    </property>
+    <addaction name="action_open"/>
+   </widget>
+   <addaction name="menu"/>
+  </widget>
+  <action name="action_open">
+   <property name="text">
+    <string>Окрыть файл JSON и папку с изображениями</string>
+   </property>
+  </action>
+  <action name="action_close">
+   <property name="text">
+    <string>Закрыть все</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

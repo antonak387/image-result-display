@@ -22,65 +22,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_open_clicked()
 {
-    itemIndex = 0;
-    QString fileName;
-    QFile file;
-    QJsonParseError jsonDocError;
-
-
-    QMessageBox::information(this, "Внимание", "Выберите JSON файл",QMessageBox::Ok);
-
-    fileName = QFileDialog::getOpenFileName(this, "Открыть файл JSON", "../", "JSON files (*.json)");
-
-    if (fileName.isEmpty())
-    {
-        //qDebug()<<"Файл не выбран";
-        QMessageBox::information(this, "Ошибка", "JSON файл не выбран",QMessageBox::Ok);
-    }
-    else
-    {
-        QMessageBox::information(this, "Внимание", "Выберите папку c изображениями",QMessageBox::Ok);
-        pathToImages = QFileDialog::getExistingDirectory(this, "Открыть папку c изображениями", "", QFileDialog::ShowDirsOnly);
-        QDir dir(pathToImages);
-        pathToImages = dir.filePath("..");
-
-        if(pathToImages.isEmpty())
-        {
-            QMessageBox::information(this, "Ошибка", "Файл с изображениями не выбран",QMessageBox::Ok);
-        }
-        else
-            {
-            file.setFileName(fileName);
-            if(file.open(QIODevice::ReadOnly|QFile::Text))
-            {
-                jsonDoc = QJsonDocument::fromJson(QByteArray(file.readAll()),&jsonDocError);
-
-                if(jsonDocError.error == 0)//QJsonParseError::NoError
-                {
-                    if (jsonDoc.isArray())
-                    {
-                        jsonArray = jsonDoc.array();
-                        ui->pushButton_open->hide();
-                        ui->splitter->show();
-                        widget_update();
-                    }
-                    else
-                    {
-                        QMessageBox::information(this, "Ошибка", "JSON Файл не является массивом, пожалуйста измените файл", QMessageBox::Ok);
-                    }
-                }
-                else
-                {
-                    QMessageBox::information(this, "Ошибка", "JSON Файл содержит ошибку", QMessageBox::Ok);
-                }
-            }
-            else
-            {
-                QMessageBox::information(this, "Ошибка", "Не получилось открыть JSON файл",QMessageBox::Ok);
-            }
-            file.close();
-        }
-    }
+    MainWindow::on_action_open_triggered();
 }
 
 void MainWindow::widget_update()
@@ -122,6 +64,8 @@ void MainWindow::widget_update()
 
     bool imageOpen;
 
+    int row = 0;
+
     if (image.isNull())
     {
         QMessageBox::information(this, "Ошибка", "Изображение не открывается", QMessageBox::Ok);
@@ -132,15 +76,65 @@ void MainWindow::widget_update()
         imageOpen = true;
 
         ui->widget_image->setMinimumHeight(image.height());
-
         ui->widget_image->create_image(image);
+
+        QJsonObject object = jsonObjectFull["template"].toObject();
+
+        QString type = object["type"].toString();
+        double confidence = object["confidence"].toDouble();
+        QString quad = object.contains("quad") ? object["quad"].toString() : "";
+
+        if (!type.isEmpty() || confidence != 0.0 || !quad.isEmpty())
+        {
+
+            ui->tableWidget->insertRow(row);
+            ui->tableWidget->setItem(row, 0, new QTableWidgetItem("template"));
+            ui->tableWidget->setItem(row, 1, new QTableWidgetItem(type));
+            ui->tableWidget->setItem(row, 2, new QTableWidgetItem(QString::number(confidence)));
+
+            if(quad == "")
+            {
+
+                QPainter painter(&ui->widget_image->im);
+
+                QPen pen;
+                pen.setColor(Qt::red);
+                pen.setWidth(2);
+                painter.setPen(pen);
+
+                QJsonArray quadArray = object.value("quad").toArray();
+                QPolygon polygon;
+
+                for (const QJsonValue &quadValue : quadArray)
+                {
+                    QJsonArray pointArray = quadValue.toArray();
+                    if (pointArray.size() == 2)
+                    {
+                        for (int i = 0; i < 4; i++)
+                        {
+                            QPoint point;
+                            point.setX(pointArray.at(0).toDouble());
+                            point.setY(pointArray.at(1).toDouble());
+                            polygon<<point;
+                        }
+                        quad.push_back(QString::number(pointArray.at(0).toDouble())+", "+QString::number(pointArray.at(1).toDouble())+"; ");
+                    }
+                }
+                painter.drawPolygon(polygon);
+            }
+            ui->tableWidget->setItem(row, 3, new QTableWidgetItem(quad));
+            ++row;
+            ui->widget_image->update();
+        }
+
 
         QList<int> sizes;
         sizes << image.width() << ui->splitter->width() - image.width();
         ui->splitter->setSizes(sizes);
     }
 
-    int row = 0;
+
+
     for (const QString &objectName : jsonObject.keys())
     {
         QJsonObject object = jsonObject[objectName].toObject();
@@ -153,13 +147,11 @@ void MainWindow::widget_update()
         ui->tableWidget->setItem(row, 0, new QTableWidgetItem(objectName));
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(value));
         ui->tableWidget->setItem(row, 2, new QTableWidgetItem(QString::number(confidence)));
-        ui->tableWidget->setItem(row, 3, new QTableWidgetItem(quad));
 
-        if(imageOpen)
+        if(imageOpen && quad == "")
         {
 
             QPainter painter(&ui->widget_image->im);
-            //painter.drawLine(0,200,200,200);
             QJsonArray quadArray = object.value("quad").toArray();
             QPolygon polygon;
 
@@ -175,14 +167,21 @@ void MainWindow::widget_update()
                         point.setY(pointArray.at(1).toDouble());
                         polygon<<point;
                     }
+                    quad.push_back(QString::number(pointArray.at(0).toDouble())+", "+QString::number(pointArray.at(1).toDouble())+"; ");
+
                 }
 
             }
             painter.drawPolygon(polygon);
         }
+        ui->tableWidget->setItem(row, 3, new QTableWidgetItem(quad));
         ++row;
         ui->widget_image->update();
     }
+
+    ui->tableWidget->resizeColumnsToContents();
+    ui->tableWidget->resizeRowsToContents();
+
 }
 
 void MainWindow::on_pushButton_back_clicked()
@@ -198,3 +197,61 @@ void MainWindow::on_pushButton_next_clicked()
 }
 
 
+
+void MainWindow::on_action_open_triggered()
+{
+    itemIndex = 0;
+    QString fileName;
+    QFile file;
+    QJsonParseError jsonDocError;
+
+    fileName = QFileDialog::getOpenFileName(this, "Открыть файл JSON", "../", "JSON files (*.json)");
+    QDir dir(fileName);
+
+    if (fileName.isEmpty())
+    {
+        //qDebug()<<"Файл не выбран";
+        QMessageBox::information(this, "Ошибка", "JSON файл не выбран",QMessageBox::Ok);
+    }
+    else
+    {
+        pathToImages = dir.filePath("..");
+
+        if(pathToImages.isEmpty())
+        {
+            QMessageBox::information(this, "Ошибка", "Файл с изображениями не выбран",QMessageBox::Ok);
+        }
+        else
+            {
+            file.setFileName(fileName);
+            if(file.open(QIODevice::ReadOnly|QFile::Text))
+            {
+                jsonDoc = QJsonDocument::fromJson(QByteArray(file.readAll()),&jsonDocError);
+
+                if(jsonDocError.error == 0)//QJsonParseError::NoError
+                {
+                    if (jsonDoc.isArray())
+                    {
+                        jsonArray = jsonDoc.array();
+                        ui->pushButton_open->hide();
+                        ui->splitter->show();
+                        widget_update();
+                    }
+                    else
+                    {
+                        QMessageBox::information(this, "Ошибка", "JSON Файл не является массивом, пожалуйста измените файл", QMessageBox::Ok);
+                    }
+                }
+                else
+                {
+                    QMessageBox::information(this, "Ошибка", "JSON Файл содержит ошибку", QMessageBox::Ok);
+                }
+            }
+            else
+            {
+                QMessageBox::information(this, "Ошибка", "Не получилось открыть JSON файл",QMessageBox::Ok);
+            }
+            file.close();
+        }
+    }
+}

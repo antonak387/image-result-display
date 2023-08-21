@@ -37,6 +37,8 @@ private slots:
 
     void widget_update();
 
+    void on_action_open_triggered();
+
 private:
     Ui::MainWindow *ui;
     QJsonDocument jsonDoc;
