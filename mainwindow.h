@@ -39,6 +39,8 @@ private slots:
 
     void on_action_open_triggered();
 
+    void on_pushButton_scale_clicked();
+
 private:
     Ui::MainWindow *ui;
     QJsonDocument jsonDoc;
@@ -46,5 +48,7 @@ private:
     QPixmap pixmap;
     int itemIndex;
     QString pathToImages;
+    double scale = 0.4;
+    int scaleMode = 1;
 };
 #endif // MAINWINDOW_H

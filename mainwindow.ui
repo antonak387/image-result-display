@@ -25,6 +25,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton_scale">
+        <property name="text">
+         <string>Приблизить изображение</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushButton_open">
         <property name="text">
          <string>Открыть файл JSON и папку с изображениями</string>

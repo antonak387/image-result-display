@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->splitter->hide();
     ui->pushButton_back->hide();
     ui->pushButton_next->hide();
+    ui->pushButton_scale->hide();
     MainWindow::showMaximized();
     MainWindow::setWindowTitle("Приложение для отображения результатов распознавания");
 }
@@ -62,6 +63,8 @@ void MainWindow::widget_update()
 
     QImage image(pathToImages+ "/" + jsonObjectFull["image"].toString());
 
+    image = image.scaled(image.width()*scale,image.height()*scale);
+
     bool imageOpen;
 
     int row = 0;
@@ -96,6 +99,8 @@ void MainWindow::widget_update()
             {
 
                 QPainter painter(&ui->widget_image->im);
+
+                painter.scale(scale, scale);
 
                 QPen pen;
                 pen.setColor(Qt::red);
@@ -152,6 +157,9 @@ void MainWindow::widget_update()
         {
 
             QPainter painter(&ui->widget_image->im);
+
+            painter.scale(scale, scale);
+
             QJsonArray quadArray = object.value("quad").toArray();
             QPolygon polygon;
 
@@ -178,6 +186,8 @@ void MainWindow::widget_update()
         ++row;
         ui->widget_image->update();
     }
+
+    //ui->widget_image->setFixedSize(ui->widget_image->size() * 0.5);
 
     ui->tableWidget->resizeColumnsToContents();
     ui->tableWidget->resizeRowsToContents();
@@ -235,6 +245,7 @@ void MainWindow::on_action_open_triggered()
                         jsonArray = jsonDoc.array();
                         ui->pushButton_open->hide();
                         ui->splitter->show();
+                        ui->pushButton_scale->show();
                         widget_update();
                     }
                     else
@@ -255,3 +266,24 @@ void MainWindow::on_action_open_triggered()
         }
     }
 }
+
+
+void MainWindow::on_pushButton_scale_clicked()
+{
+    if(scaleMode == 1)
+    {
+        scale = 1;
+        scaleMode = 2;
+        ui->pushButton_scale->setText("Отдалить изображение");
+    }
+    else
+    {
+        scale = 0.4;
+        scaleMode = 1;
+        ui->pushButton_scale->setText("Приблизить изображение");
+    }
+
+    widget_update();
+
+}
+
